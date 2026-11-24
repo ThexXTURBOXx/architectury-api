@@ -33,6 +33,7 @@ import dev.architectury.registry.registries.options.StandardRegistrarOption;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
 import net.fabricmc.fabric.api.event.registry.RegistryEntryAddedCallback;
+import net.minecraft.client.core.registries.BuiltInClientRegistries;
 import net.minecraft.core.Holder;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.Registry;
@@ -51,7 +52,9 @@ public class RegistrarManagerImpl {
     
     private static void listen(ResourceKey<?> resourceKey, Identifier id, Consumer<?> listener) {
         if (LISTENED_REGISTRIES.add(resourceKey)) {
-            Registry<?> registry = java.util.Objects.requireNonNull(BuiltInRegistries.REGISTRY.getValue(resourceKey.identifier()), "Registry " + resourceKey + " not found!");
+            Registry<?> registry = BuiltInRegistries.REGISTRY.getValue(resourceKey.identifier());
+            if (registry == null) registry = BuiltInClientRegistries.REGISTRY.getValue(resourceKey.identifier());
+            java.util.Objects.requireNonNull(registry, "Registry " + resourceKey + " not found!");
             RegistryEntryAddedCallback.event(registry).register((rawId, entryId, object) -> {
                 RegistryEntryId<?> registryEntryId = new RegistryEntryId<>(resourceKey, entryId);
                 for (Consumer<?> consumer : LISTENERS.get(registryEntryId)) {
@@ -77,7 +80,9 @@ public class RegistrarManagerImpl {
         
         @Override
         public <T> Registrar<T> get(ResourceKey<Registry<T>> key) {
-            return new RegistrarImpl<>(modId, (Registry<T>) java.util.Objects.requireNonNull(BuiltInRegistries.REGISTRY.getValue(key.identifier()), "Registry " + key + " not found!"));
+            Registry<?> registry = BuiltInRegistries.REGISTRY.getValue(key.identifier());
+            if (registry == null) registry = BuiltInClientRegistries.REGISTRY.getValue(key.identifier());
+            return new RegistrarImpl<>(modId, (Registry<T>) java.util.Objects.requireNonNull(registry, "Registry " + key + " not found!"));
         }
         
         @Override
